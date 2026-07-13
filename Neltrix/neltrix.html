@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NELTRIX | Neural Voice Automation</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+  
+  <!-- Calendly link widget begin -->
+  <link href="https://assets.calendly.com/assets/external/widget.css" rel="stylesheet">
+  <script src="https://assets.calendly.com/assets/external/widget.js" type="text/javascript" async></script>
+  <!-- Calendly link widget end -->
+
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,200;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:      #03050f;
+      --cyan:    #00ffe7;
+      --blue:    #0077ff;
+      --purple:  #8b5cf6;
+      --hot:     #ff2d78;
+      --gold:    #f5c518;
+      --glass:   rgba(255,255,255,0.03);
+      --border:  rgba(255,255,255,0.07);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: #fff;
+      overflow-x: hidden;
+      cursor: none;
+    }
+
+    /* ─── CUSTOM CURSOR ─── */
+    #cursor-dot {
+      position: fixed; top: 0; left: 0;
+      width: 8px; height: 8px;
+      background: var(--cyan);
+      border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%);
+      transition: transform .05s linear;
+      box-shadow: 0 0 12px var(--cyan), 0 0 30px rgba(0,255,231,.4);
+    }
+    #cursor-ring {
+      position: fixed; top: 0; left: 0;
+      width: 36px; height: 36px;
+      border: 1.5px solid rgba(0,255,231,.5);
+      border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%,-50%);
+      transition: transform .12s ease, width .2s ease, height .2s ease, opacity .2s ease;
+    }
+    body:has(a:hover) #cursor-ring,
+    body:has(button:hover) #cursor-ring {
+      width: 56px; height: 56px;
+      border-color: var(--cyan);
+      background: rgba(0,255,231,.05);
+    }
+
+    /* ─── NOISE OVERLAY ─── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 1; pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: .025;
+    }
+
+    /* ─── SCANLINE ─── */
+    body::after {
+      content: '';
+      position: fixed; inset: 0; z-index: 2; pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,.07) 2px,
+        rgba(0,0,0,.07) 4px
+      );
+    }
+
+    /* ─── AMBIENT MESH ─── */
+    #mesh {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 60% 50% at 8% 15%, rgba(0,255,231,.09) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 60% at 92% 85%, rgba(139,92,246,.07) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 40% at 50% 50%, rgba(0,119,255,.04) 0%, transparent 70%);
+    }
+
+    /* ─── FONTS ─── */
+    .font-mono  { font-family: 'Space Mono', monospace; }
+    .font-hero  { font-family: 'Bebas Neue', sans-serif; letter-spacing: .02em; }
+
+    /* ─── GLASS ─── */
+    .glass {
+      background: var(--glass);
+      backdrop-filter: blur(16px) saturate(180%);
+      border: 1px solid var(--border);
+    }
+
+    /* ─── NEON BORDER ANIMATION ─── */
+    @property --angle {
+      syntax: '<angle>'; initial-value: 0deg; inherits: false;
+    }
+    .neon-border {
+      position: relative;
+      border: 1px solid transparent;
+      background-clip: padding-box;
+    }
+    .neon-border::before {
+      content: '';
+      position: absolute; inset: -1px;
+      border-radius: inherit;
+      background: conic-gradient(from var(--angle), transparent 70%, var(--cyan) 80%, var(--blue) 90%, transparent 100%);
+      animation: spin-border 4s linear infinite;
+      z-index: -1;
+    }
+    @keyframes spin-border {
+      to { --angle: 360deg; }
+    }
+
+    /* ─── GRADIENT TEXT ─── */
+    .gt {
+      background: linear-gradient(100deg, #fff 10%, var(--cyan) 50%, var(--blue) 90%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .gt-hot {
+      background: linear-gradient(100deg, var(--cyan) 0%, var(--hot) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ─── BUTTON ─── */
+    .btn-prime {
+      position: relative; overflow: hidden;
+      background: linear-gradient(135deg, var(--blue), var(--cyan));
+      transition: transform .25s ease, box-shadow .25s ease;
+      box-shadow: 0 0 0 rgba(0,255,231,0);
+    }
+    .btn-prime:hover {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 0 40px rgba(0,255,231,.5), 0 16px 40px rgba(0,0,0,.4);
+    }
+    .btn-prime::after {
+      content: '';
+      position: absolute; top: -50%; left: -60%;
+      width: 40%; height: 200%;
+      background: rgba(255,255,255,.18);
+      transform: skewX(-20deg);
+      animation: shimmer 3s ease infinite;
+    }
+    @keyframes shimmer {
+      0%   { left: -60%; }
+      50%  { left: 120%; }
+      100% { left: 120%; }
+    }
+    .btn-ghost {
+      transition: all .25s ease;
+      border: 1px solid rgba(255,255,255,.12);
+    }
+    .btn-ghost:hover {
+      background: rgba(255,255,255,.06);
+      border-color: var(--cyan);
+      box-shadow: 0 0 20px rgba(0,255,231,.15);
+    }
+
+    /* ─── CARD HOVER ─── */
+    .card-hover {
+      transition: transform .4s cubic-bezier(.23,1,.32,1), box-shadow .4s ease, border-color .4s ease;
+    }
+    .card-hover:hover {
+      transform: translateY(-10px) scale(1.01);
+      box-shadow: 0 30px 80px rgba(0,0,0,.5), 0 0 40px rgba(0,255,231,.12);
+      border-color: rgba(0,255,231,.25);
+    }
+
+    /* ─── FLOAT ─── */
+    @keyframes float {
+      0%,100% { transform: translateY(0) rotate(0deg); }
+      50%      { transform: translateY(-18px) rotate(.8deg); }
+    }
+    .float { animation: float 7s ease-in-out infinite; }
+    .float-d { animation: float 7s ease-in-out infinite; animation-delay: -2s; }
+    .float-dd { animation: float 7s ease-in-out infinite; animation-delay: -4s; }
+
+    /* ─── REVEAL ─── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: opacity .9s ease, transform .9s cubic-bezier(.23,1,.32,1);
+    }
+    .reveal.on { opacity: 1; transform: translateY(0); }
+    .reveal-l {
+      opacity: 0; transform: translateX(-40px);
+      transition: opacity .9s ease, transform .9s cubic-bezier(.23,1,.32,1);
+    }
+    .reveal-l.on { opacity: 1; transform: translateX(0); }
+
+    /* ─── STAGGER ─── */
+    .stagger > *:nth-child(1) { transition-delay: .1s; }
+    .stagger > *:nth-child(2) { transition-delay: .2s; }
+    .stagger > *:nth-child(3) { transition-delay: .3s; }
+    .stagger > *:nth-child(4) { transition-delay: .4s; }
+
+    /* ─── TICKER ─── */
+    .ticker-track {
+      display: flex; gap: 60px;
+      animation: ticker 30s linear infinite;
+      white-space: nowrap;
+    }
+    @keyframes ticker {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+
+    /* ─── CANVAS ─── */
+    #bg-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: .45; }
+
+    /* ─── GLITCH ─── */
+    @keyframes glitch {
+      0%,100% { clip-path: inset(0 0 100% 0); transform: translate(0); }
+      10%      { clip-path: inset(10% 0 80% 0); transform: translate(-3px,2px); }
+      20%      { clip-path: inset(40% 0 50% 0); transform: translate(3px,-1px); }
+      30%      { clip-path: inset(70% 0 10% 0); transform: translate(-2px,3px); }
+      40%      { clip-path: inset(20% 0 70% 0); transform: translate(2px,0); }
+      50%      { clip-path: inset(60% 0 30% 0); transform: translate(-3px,-2px); }
+    }
+    .glitch-wrap { position: relative; }
+    .glitch-wrap::before,
+    .glitch-wrap::after {
+      content: attr(data-text);
+      position: absolute; inset: 0;
+      font: inherit;
+      background: inherit;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .glitch-wrap::before {
+      color: var(--hot);
+      -webkit-text-fill-color: var(--hot);
+      animation: glitch 5s infinite; animation-delay: .5s;
+      mix-blend-mode: screen;
+    }
+    .glitch-wrap::after {
+      color: var(--cyan);
+      -webkit-text-fill-color: var(--cyan);
+      animation: glitch 5s infinite; animation-delay: 1s;
+      mix-blend-mode: screen;
+    }
+
+    /* ─── PULSE RING ─── */
+    @keyframes pulse-ring {
+      0%   { transform: scale(1); opacity: .6; }
+      100% { transform: scale(2.5); opacity: 0; }
+    }
+    .pulse-ring::before, .pulse-ring::after {
+      content: '';
+      position: absolute; inset: 0; border-radius: 50%;
+      background: var(--cyan);
+      animation: pulse-ring 2.5s ease-out infinite;
+    }
+    .pulse-ring::after { animation-delay: 1.25s; }
+
+    /* ─── COUNTER ─── */
+    .counter-val { font-family: 'Bebas Neue', sans-serif; }
+
+    /* ─── PROGRESS BAR ─── */
+    @keyframes bar-fill {
+      from { width: 0; }
+    }
+    .bar-fill { animation: bar-fill 1.8s cubic-bezier(.23,1,.32,1) forwards; }
+
+    /* ─── TYPEWRITER ─── */
+    .typewriter {
+      overflow: hidden;
+      border-right: 2px solid var(--cyan);
+      white-space: nowrap;
+      animation: type 3s steps(28,end) forwards, blink .7s step-end infinite;
+      max-width: 0;
+    }
+    @keyframes type  { to { max-width: 100%; } }
+    @keyframes blink { 50% { border-color: transparent; } }
+
+    /* ─── NICHE EXPAND ─── */
+    .niche-card {
+      flex: 1;
+      transition: flex .6s cubic-bezier(.23,1,.32,1);
+    }
+    .niche-card:hover { flex: 2; }
+    .niche-detail { 
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      transition: max-height .6s cubic-bezier(.23,1,.32,1), opacity .5s ease;
+    }
+    .niche-card:hover .niche-detail { 
+      max-height: 200px;
+      opacity: 1;
+      transition-delay: 0.1s;
+    }
+
+    /* ─── TIMELINE LINE ─── */
+    .tl-line {
+      position: absolute; top: 48px; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--cyan), var(--purple));
+      transform-origin: left; transform: scaleX(0);
+      transition: transform 1.5s ease;
+    }
+    .tl-line.on { transform: scaleX(1); }
+
+    /* ─── PRICING HIGHLIGHT ─── */
+    .price-hot {
+      background: linear-gradient(180deg, rgba(0,255,231,.06) 0%, transparent 100%);
+      border-color: var(--cyan) !important;
+    }
+
+    /* ─── SCROLLBAR ─── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: linear-gradient(var(--cyan), var(--blue)); border-radius: 4px; }
+
+    /* ─── NAV ACTIVE ─── */
+    .nav-link { position: relative; }
+    .nav-link::after {
+      content: '';
+      position: absolute; bottom: -4px; left: 0; right: 0;
+      height: 1px; background: var(--cyan);
+      transform: scaleX(0); transition: transform .3s ease;
+    }
+    .nav-link:hover::after { transform: scaleX(1); }
+
+    /* ─── STAT BAR ─── */
+    .stat-bar {
+      height: 2px; background: rgba(255,255,255,.06); border-radius: 2px; overflow: hidden;
+    }
+    .stat-bar-fill {
+      height: 100%; border-radius: 2px;
+      background: linear-gradient(90deg, var(--cyan), var(--blue));
+    }
+
+    /* GLOW BADGE */
+    .badge-glow {
+      box-shadow: 0 0 0 1px rgba(0,255,231,.3), 0 0 20px rgba(0,255,231,.15);
+    }
+
+    /* BIG NUMBER */
+    .big-num {
+      font-family: 'Bebas Neue', sans-serif;
+      background: linear-gradient(180deg, #fff 0%, rgba(255,255,255,.3) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ─── ADDED SECTIONS CSS ─── */
+    /* Industries Marquee */
+    .ind-tag {
+        display: inline-flex; align-items: center; gap: 8px; padding: 14px 28px;
+        border-radius: 100px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600;
+        white-space: nowrap; cursor: default; transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+        position: relative; overflow: hidden;
+    }
+    .ind-tag.ind-teal { background: rgba(0,255,231,0.08); border: 1px solid rgba(0,255,231,0.25); color: rgba(0,255,231,0.9); }
+    .ind-tag.ind-teal:hover { background: rgba(0,255,231,0.18); border-color: rgba(0,255,231,0.6); color: #00ffe7; transform: scale(1.08) translateY(-3px); box-shadow: 0 8px 30px rgba(0,255,231,0.25); }
+    .ind-tag.ind-purple { background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.25); color: rgba(162,120,255,0.9); }
+    .ind-tag.ind-purple:hover { background: rgba(139,92,246,0.18); border-color: rgba(139,92,246,0.6); color: #a278ff; transform: scale(1.08) translateY(-3px); box-shadow: 0 8px 30px rgba(139,92,246,0.25); }
+    .ind-tag.ind-pink { background: rgba(255,45,120,0.08); border: 1px solid rgba(255,45,120,0.25); color: rgba(255,100,150,0.9); }
+    .ind-tag.ind-pink:hover { background: rgba(255,45,120,0.18); border-color: rgba(255,45,120,0.6); color: #ff6496; transform: scale(1.08) translateY(-3px); box-shadow: 0 8px 30px rgba(255,45,120,0.25); }
+    .ind-tag.ind-orange { background: rgba(245,197,24,0.08); border: 1px solid rgba(245,197,24,0.25); color: rgba(245,197,24,0.9); }
+    .ind-tag.ind-orange:hover { background: rgba(245,197,24,0.18); border-color: rgba(245,197,24,0.6); color: #f5c518; transform: scale(1.08) translateY(-3px); box-shadow: 0 8px 30px rgba(245,197,24,0.25); }
+    .ind-tag::after { content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent); transition: left 0.5s ease; }
+    .ind-tag:hover::after { left: 150%; }
+    .marquee-row-left:hover, .marquee-row-right:hover { animation-play-state: paused; }
+    @keyframes scroll-left { 0% { transform: translateX(0); } 100% { transform: translateX(-33.333%); } }
+    @keyframes scroll-right { 0% { transform: translateX(-33.333%); } 100% { transform: translateX(0); } }
+
+    /* ROI Calculator */
+    @keyframes calc-float { 0% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-8px) rotate(0.5deg); } 100% { transform: translateY(0px) rotate(0deg); } }
+    .active-calc { transform: scale(1.08) !important; filter: drop-shadow(0 0 15px rgba(0,255,231,0.8)) brightness(1.2); }
+    .calc-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 64px; align-items: start; margin-top: 64px; animation: calc-float 6s ease-in-out infinite; }
+    .slider-group { margin-bottom: 32px; }
+    .slider-header { display: flex; justify-content: space-between; margin-bottom: 16px; font-weight: 500; }
+    .roi-input-range {
+        -webkit-appearance: none; width: 100%; height: 4px; border-radius: 100px;
+        background: rgba(255,255,255,0.1); outline: none;
+    }
+    .roi-input-range::-webkit-slider-thumb {
+        -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%;
+        background: linear-gradient(135deg, var(--cyan), var(--blue)); cursor: pointer;
+        box-shadow: 0 0 15px rgba(0,255,231,0.6); transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .roi-input-range::-webkit-slider-thumb:hover { transform: scale(1.4); box-shadow: 0 0 30px rgba(0,255,231,1); }
+    .roi-input-range::-webkit-slider-thumb:active { transform: scale(1.1); box-shadow: 0 0 15px rgba(0,255,231,1); }
+    .roi-result { text-align: center; display: flex; flex-direction: column; justify-content: center; height: 100%; }
+    .roi-result h4 { font-size: 20px; color: rgba(255,255,255,0.6); margin-bottom: 16px; }
+    .roi-amount {
+        font-size: 64px; font-weight: 800; font-family: 'Bebas Neue', sans-serif;
+        background: linear-gradient(135deg, var(--cyan), var(--blue));
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); margin-bottom: 16px; display: inline-block;
+    }
+    .chart-bar { height: 12px; background: rgba(255,255,255,0.1); border-radius: 6px; overflow: hidden; margin-top: 24px; width: 100%; }
+    .chart-fill { height: 100%; background: var(--cyan); width: 0%; transition: width 0.5s ease; box-shadow: 0 0 10px var(--cyan); }
+
+    /* Testimonials */
+    .test-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin-top: 64px; }
+    .stars { color: var(--gold); margin-bottom: 24px; letter-spacing: 4px; }
+    .testimonial-card {
+        display: flex; flex-direction: column; justify-content: space-between;
+        width: 400px; min-height: 280px; padding: 36px;
+        background: linear-gradient(145deg, rgba(255,255,255,0.06), rgba(255,255,255,0.01));
+        border: 1px solid rgba(255,255,255,0.08);
+        backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-radius: 24px;
+        position: relative; overflow: hidden; transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); white-space: normal;
+    }
+    .testimonial-card::before {
+        content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+        transform: skewX(-20deg); transition: 0.7s; z-index: 0;
+    }
+    .testimonial-card:hover {
+        transform: translateY(-10px) scale(1.02); border-color: rgba(0,255,231,0.4);
+        box-shadow: 0 40px 80px rgba(0,0,0,0.5), 0 0 60px rgba(0,255,231,0.15), inset 0 1px 0 rgba(255,255,255,0.2);
+        background: linear-gradient(145deg, rgba(0,255,231,0.1), rgba(255,255,255,0.02));
+    }
+    .testimonial-card:hover::before { left: 200%; }
+    .testimonial-text { font-size: 15px; line-height: 1.8; color: rgba(240,244,255,0.8); margin-bottom: 28px; flex-grow: 1; position: relative; z-index: 1;}
+    .testimonial-author { display: flex; align-items: center; gap: 14px; margin-top: auto; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); position: relative; z-index: 1;}
+    .avatar-circle {
+        width: 44px; height: 44px; border-radius: 50%;
+        background: linear-gradient(135deg, var(--cyan), var(--blue));
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 14px; color: #03050f; flex-shrink: 0;
+    }
+    .author-name { font-weight: 700; font-size: 14px; color: #fff; }
+    .author-company { font-size: 12px; color: rgba(255,255,255,0.45); margin-top: 2px; }
+    @keyframes scroll-test { 0% { transform: translateX(0); } 100% { transform: translateX(calc(-50% - 16px)); } }
+    @media (max-width: 1024px) {
+        .calc-grid { grid-template-columns: 1fr; gap: 40px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Custom Cursor -->
+<div id="cursor-dot"></div>
+<div id="cursor-ring"></div>
+
+<!-- Canvas Background -->
+<canvas id="bg-canvas"></canvas>
+
+<!-- Ambient Mesh -->
+<div id="mesh"></div>
+
+<!-- ═══════════════════════════════════════════ HEADER ═══ -->
+<header class="sticky top-0 z-50 glass border-b border-white/5" style="border-bottom-color: rgba(0,255,231,.07);">
+  <nav class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+    <a href="#" class="flex items-center group">
+      <img src="Static/Neltrix.png" alt="Neltrix Logo" class="h-20 md:h-28 w-auto object-contain drop-shadow-[0_0_15px_rgba(0,255,231,0.3)] transition-transform duration-300 group-hover:scale-105">
+    </a>
+
+    <div class="hidden lg:flex items-center gap-10 text-sm font-medium text-white/60">
+      <a href="#services" class="nav-link hover:text-white transition-colors">Services</a>
+      <a href="#niches"   class="nav-link hover:text-white transition-colors">Industries</a>
+      <a href="#process"  class="nav-link hover:text-white transition-colors">Process</a>
+      <a href="#pricing"  class="nav-link hover:text-white transition-colors">Pricing</a>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <a href="#" onclick="Calendly.initPopupWidget({url: 'https://calendly.com/fanbotservices/30min'});return false;" class="px-4 py-2 md:px-6 md:py-2.5 rounded-full btn-prime text-xs md:text-sm font-bold whitespace-nowrap">Book Demo</a>
+    </div>
+  </nav>
+</header>
+
+<!-- ═══════════════════════════════════════════ HERO ═══ -->
+<section class="relative pt-16 pb-24 md:pt-24 md:pb-48 px-6 overflow-hidden">
+
+  <!-- Giant BG letter -->
+  <div class="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0">
+    <span class="font-hero text-[30vw] text-white/[.015] leading-none">N</span>
+  </div>
+
+  <div class="max-w-7xl mx-auto relative z-10">
+    <div class="grid lg:grid-cols-[1fr_420px] gap-16 items-center">
+
+      <!-- Left -->
+      <div class="space-y-10">
+
+
+        <!-- Headline -->
+        <div class="reveal on" style="transition-delay:.05s">
+          <h1 class="font-hero text-[clamp(4.5rem,14vw,9rem)] leading-[.9] tracking-tight">
+            TURN COLD<br>
+            CALLS INTO<br>
+            <span class="glitch-wrap gt" data-text="REVENUE.">REVENUE.</span>
+          </h1>
+        </div>
+
+        <!-- Subline -->
+        <p class="text-xl text-white/50 max-w-lg leading-relaxed reveal on" style="transition-delay:.1s">
+          Stop leaving money on the table. Our hyper-realistic AI voice agents handle inbound calls, qualify leads, and book appointments. <em class="text-white/80 not-italic">24/7, zero downtime.</em>
+        </p>
+
+        <!-- Typewriter -->
+        <div class="font-mono text-sm text-[var(--cyan)] reveal on" style="transition-delay:.15s">
+          <span class="typewriter">$ neltrix init --mode=full-autonomy</span>
+        </div>
+
+        <!-- CTAs -->
+        <div class="flex flex-wrap gap-4 reveal on" style="transition-delay:.2s">
+          <a href="#" onclick="Calendly.initPopupWidget({url: 'https://calendly.com/fanbotservices/30min'});return false;"  class="px-10 py-5 rounded-2xl btn-prime text-base font-bold flex items-center gap-3">
+            Book Free Demo
+            <iconify-icon icon="lucide:arrow-right"></iconify-icon>
+          </a>
+          <a href="#services" class="px-10 py-5 rounded-2xl glass btn-ghost text-base font-bold flex items-center gap-3">
+            See Services
+          </a>
+        </div>
+
+        <!-- Trust row -->
+        <div class="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 pt-8 border-t border-white/5 reveal on" style="transition-delay:.25s">
+          <div class="flex items-center gap-4">
+            <div class="flex -space-x-3">
+              <img src="https://api.dicebear.com/7.x/lorelei/svg?seed=Felix" class="w-9 h-9 rounded-full border-2 border-[#03050f] bg-gray-800" alt="">
+              <img src="https://api.dicebear.com/7.x/lorelei/svg?seed=Aria"  class="w-9 h-9 rounded-full border-2 border-[#03050f] bg-gray-800" alt="">
+              <img src="https://api.dicebear.com/7.x/lorelei/svg?seed=Mike"  class="w-9 h-9 rounded-full border-2 border-[#03050f] bg-gray-800" alt="">
+              <img src="https://api.dicebear.com/7.x/lorelei/svg?seed=Nora"  class="w-9 h-9 rounded-full border-2 border-[#03050f] bg-gray-800" alt="">
+            </div>
+            <p class="text-sm text-white/40">
+              <span class="text-white font-semibold">500+ businesses</span><br class="sm:hidden"> already automated
+            </p>
+          </div>
+          <div class="flex items-center gap-1 sm:ml-auto">
+            <iconify-icon icon="lucide:star" class="text-[var(--gold)] text-xs"></iconify-icon>
+            <iconify-icon icon="lucide:star" class="text-[var(--gold)] text-xs"></iconify-icon>
+            <iconify-icon icon="lucide:star" class="text-[var(--gold)] text-xs"></iconify-icon>
+            <iconify-icon icon="lucide:star" class="text-[var(--gold)] text-xs"></iconify-icon>
+            <iconify-icon icon="lucide:star" class="text-[var(--gold)] text-xs"></iconify-icon>
+            <span class="text-xs text-white/30 ml-1">5.0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right — Stats Cards -->
+      <div class="relative reveal on" style="transition-delay:.3s">
+        <div class="absolute -inset-16 rounded-full bg-[var(--cyan)] opacity-[.07] blur-[100px] pointer-events-none"></div>
+        <div class="relative grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+          <div class="glass card-hover neon-border p-7 rounded-3xl float space-y-3 col-span-2">
+            <div class="flex items-center justify-between">
+              <span class="font-mono text-[10px] text-white/30 uppercase tracking-widest">Live Revenue Generated</span>
+              <span class="flex items-center gap-1 text-[10px] text-emerald-400 font-mono">
+                <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>LIVE
+              </span>
+            </div>
+            <div class="big-num text-5xl" id="rev-counter">$0</div>
+            <div class="flex gap-1 items-end h-8 mt-2">
+              <div class="w-2 h-[30%] bg-[var(--cyan)] opacity-20 rounded-t"></div>
+              <div class="w-2 h-[50%] bg-[var(--cyan)] opacity-40 rounded-t"></div>
+              <div class="w-2 h-[40%] bg-[var(--cyan)] opacity-50 rounded-t"></div>
+              <div class="w-2 h-[70%] bg-[var(--cyan)] opacity-70 rounded-t"></div>
+              <div class="w-2 h-[90%] bg-[var(--cyan)] opacity-90 rounded-t"></div>
+              <div class="w-2 h-[100%] bg-white rounded-t"></div>
+            </div>
+          </div>
+
+          <div class="glass card-hover p-7 rounded-3xl float-d space-y-3">
+            <div class="w-10 h-10 rounded-xl bg-[var(--cyan)] bg-opacity-10 flex items-center justify-center">
+              <iconify-icon icon="lucide:trending-up" class="text-xl text-[var(--cyan)]"></iconify-icon>
+            </div>
+            <div class="big-num text-4xl">+127%</div>
+            <p class="font-mono text-[10px] text-white/30 uppercase tracking-widest">Conv. Growth</p>
+          </div>
+
+          <div class="glass card-hover p-7 rounded-3xl float-dd space-y-3">
+            <div class="w-10 h-10 rounded-xl bg-purple-500 bg-opacity-10 flex items-center justify-center">
+              <iconify-icon icon="lucide:mic" class="text-xl text-purple-400"></iconify-icon>
+            </div>
+            <div class="big-num text-4xl">1.4K</div>
+            <p class="font-mono text-[10px] text-white/30 uppercase tracking-widest">AI Calls / Day</p>
+          </div>
+
+          <div class="glass card-hover p-5 rounded-3xl space-y-2 col-span-2">
+            <div class="flex items-center justify-between text-[11px] text-white/40 font-mono mb-3">
+              <span>LEAD QUAL RATE</span><span class="text-[var(--cyan)]">94.2%</span>
+            </div>
+            <div class="stat-bar">
+              <div class="stat-bar-fill bar-fill" style="width:94%"></div>
+            </div>
+            <div class="flex items-center justify-between text-[11px] text-white/40 font-mono mt-3">
+              <span>BOOKING RATE</span><span class="text-purple-400">78.6%</span>
+            </div>
+            <div class="stat-bar">
+              <div class="stat-bar-fill bar-fill" style="width:78%; background: linear-gradient(90deg, var(--purple), #c084fc); animation-delay:.3s"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════ TICKER ═══ -->
+<div class="border-y border-white/5 py-5 overflow-hidden relative z-10" style="background:rgba(0,255,231,.02)">
+  <div class="ticker-track text-white/20 font-mono text-sm uppercase tracking-widest select-none">
+    <span>AI Voice Agents</span><span class="text-[var(--cyan)]">✦</span>
+    <span>Lead Qualification</span><span class="text-[var(--cyan)]">✦</span>
+    <span>24/7 Automation</span><span class="text-[var(--cyan)]">✦</span>
+    <span>CRM Pipeline</span><span class="text-[var(--cyan)]">✦</span>
+    <span>GPT-4o Voice</span><span class="text-[var(--cyan)]">✦</span>
+    <span>Booking Automation</span><span class="text-[var(--cyan)]">✦</span>
+    <span>Neural Sales Engine</span><span class="text-[var(--cyan)]">✦</span>
+    <span>Zero Missed Calls</span><span class="text-[var(--cyan)]">✦</span>
+    <!-- duplicate for seamless loop -->
+    <span>AI Voice Agents</span><span class="text-[var(--cyan)]">✦</span>
+    <span>Lead Qualification</span><span class="text-[var(--cyan)]">✦</span>
+    <span>24/7 Automation</span><span class="text-[var(--cyan)]">✦</span>
+    <span>CRM Pipeline</span><span class="text-[var(--cyan)]">✦</span>
+    <span>GPT-4o Voice</span><span class="text-[var(--cyan)]">✦</span>
+    <span>Booking Automation</span><span class="text-[var(--cyan)]">✦</span>
+    <span>Neural Sales Engine</span><span class="text-[var(--cyan)]">✦</span>
+    <span>Zero Missed Calls</span><span class="text-[var(--cyan)]">✦</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ SERVICES ═══ -->
+<section id="services" class="py-24 md:py-40 px-6 relative">
+  <div class="max-w-7xl mx-auto space-y-20">
+
+    <div class="text-center space-y-4 reveal">
+      <p class="font-mono text-[11px] text-[var(--cyan)] uppercase tracking-[.3em]">// 01 — Core Services</p>
+      <h2 class="font-hero text-[clamp(3rem,7vw,7rem)] leading-none">
+        EVERYTHING YOU NEED<br>
+        TO <span class="gt">DOMINATE</span>
+      </h2>
+      <p class="text-white/40 max-w-xl mx-auto text-lg">Four precision-engineered pillars built to take your business to the next level.</p>
+    </div>
+
+    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 stagger reveal">
+
+      <!-- Card 1 -->
+      <div class="glass card-hover p-10 rounded-[2rem] space-y-6 reveal">
+        <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background:rgba(0,255,231,.08); box-shadow: 0 0 30px rgba(0,255,231,.08)">
+          <iconify-icon icon="lucide:globe" class="text-2xl text-[var(--cyan)]"></iconify-icon>
+        </div>
+        <div>
+          <h3 class="text-xl font-semibold mb-1">Starter Web Presence</h3>
+          <div class="w-8 h-px bg-[var(--cyan)] opacity-40 mb-4"></div>
+          <ul class="space-y-3 text-sm text-white/50">
+            <li class="flex items-center gap-2"><span class="text-[var(--cyan)]">→</span> High-Fi Landing Pages</li>
+            <li class="flex items-center gap-2"><span class="text-[var(--cyan)]">→</span> Conversion Optimized</li>
+            <li class="flex items-center gap-2"><span class="text-[var(--cyan)]">→</span> Mobile Sculpted</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="glass card-hover p-10 rounded-[2rem] space-y-6 reveal" style="transition-delay:.1s">
+        <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background:rgba(0,119,255,.08); box-shadow: 0 0 30px rgba(0,119,255,.08)">
+          <iconify-icon icon="lucide:bot" class="text-2xl text-blue-400"></iconify-icon>
+        </div>
+        <div>
+          <h3 class="text-xl font-semibold mb-1">AI Voice Receptionist</h3>
+          <div class="w-8 h-px bg-blue-400 opacity-40 mb-4"></div>
+          <ul class="space-y-3 text-sm text-white/50">
+            <li class="flex items-center gap-2"><span class="text-blue-400">→</span> 24/7 Call Handling</li>
+            <li class="flex items-center gap-2"><span class="text-blue-400">→</span> GPT-4o Voice Engine</li>
+            <li class="flex items-center gap-2"><span class="text-blue-400">→</span> Human-like Inflection</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="glass card-hover p-10 rounded-[2rem] space-y-6 reveal" style="transition-delay:.2s">
+        <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background:rgba(139,92,246,.08); box-shadow: 0 0 30px rgba(139,92,246,.08)">
+          <iconify-icon icon="lucide:database" class="text-2xl text-purple-400"></iconify-icon>
+        </div>
+        <div>
+          <h3 class="text-xl font-semibold mb-1">CRM & Pipeline</h3>
+          <div class="w-8 h-px bg-purple-400 opacity-40 mb-4"></div>
+          <ul class="space-y-3 text-sm text-white/50">
+            <li class="flex items-center gap-2"><span class="text-purple-400">→</span> Lead Tracking System</li>
+            <li class="flex items-center gap-2"><span class="text-purple-400">→</span> Automated Follow-ups</li>
+            <li class="flex items-center gap-2"><span class="text-purple-400">→</span> Dashboard Analytics</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="glass card-hover p-10 rounded-[2rem] space-y-6 reveal" style="transition-delay:.3s">
+        <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background:rgba(16,185,129,.08); box-shadow: 0 0 30px rgba(16,185,129,.08)">
+          <iconify-icon icon="lucide:workflow" class="text-2xl text-emerald-400"></iconify-icon>
+        </div>
+        <div>
+          <h3 class="text-xl font-semibold mb-1">Business Automations</h3>
+          <div class="w-8 h-px bg-emerald-400 opacity-40 mb-4"></div>
+          <ul class="space-y-3 text-sm text-white/50">
+            <li class="flex items-center gap-2"><span class="text-emerald-400">→</span> Workflow Optimization</li>
+            <li class="flex items-center gap-2"><span class="text-emerald-400">→</span> Multi-app Syncing</li>
+            <li class="flex items-center gap-2"><span class="text-emerald-400">→</span> Scalable Infrastructure</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════ NICHES / INDUSTRIES ═══ -->
+<section id="niches" class="py-24 md:py-40 overflow-hidden relative" style="background:rgba(255,255,255,.01)">
+    <div style="text-align: center; margin-bottom: 60px; padding: 0 40px;" class="reveal">
+        <p class="font-mono text-[11px] text-[var(--cyan)] uppercase tracking-[.3em] mb-3">// 02 — Target Niches</p>
+        <h2 class="font-hero text-[clamp(3rem,7vw,7rem)] leading-none">
+            Industries We <span class="gt">Dominate</span>
+        </h2>
+    </div>
+
+    <div class="reveal" style="overflow: hidden; margin-bottom: 20px; mask-image: linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%); -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%);">
+        <div class="marquee-row-left" style="display: flex; gap: 16px; width: max-content; animation: scroll-left 25s linear infinite;">
+            <!-- Set 1 -->
+            <div class="ind-tag ind-teal">🍽️ Restaurants</div>
+            <div class="ind-tag ind-purple">💆 Salons & Spas</div>
+            <div class="ind-tag ind-pink">🦷 Dental Clinics</div>
+            <div class="ind-tag ind-teal">🏠 Real Estate</div>
+            <div class="ind-tag ind-purple">⚖️ Law Firms</div>
+            <div class="ind-tag ind-pink">💉 Med Spas</div>
+            <div class="ind-tag ind-teal">🚗 Auto Dealers</div>
+            <div class="ind-tag ind-purple">🏋️ Gyms & Fitness</div>
+            <div class="ind-tag ind-pink">🏨 Hotels</div>
+            <div class="ind-tag ind-teal">🏥 Clinics</div>
+            <!-- Set 2 -->
+            <div class="ind-tag ind-teal">🍽️ Restaurants</div>
+            <div class="ind-tag ind-purple">💆 Salons & Spas</div>
+            <div class="ind-tag ind-pink">🦷 Dental Clinics</div>
+            <div class="ind-tag ind-teal">🏠 Real Estate</div>
+            <div class="ind-tag ind-purple">⚖️ Law Firms</div>
+            <div class="ind-tag ind-pink">💉 Med Spas</div>
+            <div class="ind-tag ind-teal">🚗 Auto Dealers</div>
+            <div class="ind-tag ind-purple">🏋️ Gyms & Fitness</div>
+            <div class="ind-tag ind-pink">🏨 Hotels</div>
+            <div class="ind-tag ind-teal">🏥 Clinics</div>
+            <!-- Set 3 -->
+            <div class="ind-tag ind-teal">🍽️ Restaurants</div>
+            <div class="ind-tag ind-purple">💆 Salons & Spas</div>
+            <div class="ind-tag ind-pink">🦷 Dental Clinics</div>
+            <div class="ind-tag ind-teal">🏠 Real Estate</div>
+            <div class="ind-tag ind-purple">⚖️ Law Firms</div>
+            <div class="ind-tag ind-pink">💉 Med Spas</div>
+            <div class="ind-tag ind-teal">🚗 Auto Dealers</div>
+            <div class="ind-tag ind-purple">🏋️ Gyms & Fitness</div>
+            <div class="ind-tag ind-pink">🏨 Hotels</div>
+            <div class="ind-tag ind-teal">🏥 Clinics</div>
+        </div>
+    </div>
+
+    <div class="reveal" style="overflow: hidden; mask-image: linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%); -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%);">
+        <div class="marquee-row-right" style="display: flex; gap: 16px; width: max-content; animation: scroll-right 30s linear infinite;">
+            <!-- Set 1 -->
+            <div class="ind-tag ind-orange">🌮 Food & Beverage</div>
+            <div class="ind-tag ind-teal">🏦 Finance & Insurance</div>
+            <div class="ind-tag ind-purple">🛍️ Retail Stores</div>
+            <div class="ind-tag ind-pink">📸 Photography</div>
+            <div class="ind-tag ind-orange">🚚 Logistics</div>
+            <div class="ind-tag ind-teal">🎓 Education</div>
+            <div class="ind-tag ind-purple">🛠️ Home Services</div>
+            <div class="ind-tag ind-pink">✈️ Travel Agencies</div>
+            <div class="ind-tag ind-orange">💼 Consulting</div>
+            <div class="ind-tag ind-teal">🏗️ Construction</div>
+            <!-- Set 2 -->
+            <div class="ind-tag ind-orange">🌮 Food & Beverage</div>
+            <div class="ind-tag ind-teal">🏦 Finance & Insurance</div>
+            <div class="ind-tag ind-purple">🛍️ Retail Stores</div>
+            <div class="ind-tag ind-pink">📸 Photography</div>
+            <div class="ind-tag ind-orange">🚚 Logistics</div>
+            <div class="ind-tag ind-teal">🎓 Education</div>
+            <div class="ind-tag ind-purple">🛠️ Home Services</div>
+            <div class="ind-tag ind-pink">✈️ Travel Agencies</div>
+            <div class="ind-tag ind-orange">💼 Consulting</div>
+            <div class="ind-tag ind-teal">🏗️ Construction</div>
+            <!-- Set 3 -->
+            <div class="ind-tag ind-orange">🌮 Food & Beverage</div>
+            <div class="ind-tag ind-teal">🏦 Finance & Insurance</div>
+            <div class="ind-tag ind-purple">🛍️ Retail Stores</div>
+            <div class="ind-tag ind-pink">📸 Photography</div>
+            <div class="ind-tag ind-orange">🚚 Logistics</div>
+            <div class="ind-tag ind-teal">🎓 Education</div>
+            <div class="ind-tag ind-purple">🛠️ Home Services</div>
+            <div class="ind-tag ind-pink">✈️ Travel Agencies</div>
+            <div class="ind-tag ind-orange">💼 Consulting</div>
+            <div class="ind-tag ind-teal">🏗️ Construction</div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════ ROI CALCULATOR ═══ -->
+<section id="calculator" class="py-24 md:py-40 px-6 relative overflow-hidden">
+    <div class="max-w-5xl mx-auto reveal">
+        <h2 class="text-center font-hero text-[clamp(3rem,7vw,7rem)] leading-none mb-12">Calculate Your <span class="gt">Lost Revenue</span></h2>
+        <div class="calc-grid glass p-10 rounded-[2rem]">
+            <div class="calc-controls">
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span>Missed calls per week</span>
+                        <span id="val-calls" class="text-[var(--cyan)] font-bold font-mono">30</span>
+                    </div>
+                    <input type="range" class="roi-input-range" id="slider-calls" min="0" max="100" value="30">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span>Average customer value ($)</span>
+                        <span id="val-value" class="text-[var(--cyan)] font-bold font-mono">$500</span>
+                    </div>
+                    <input type="range" class="roi-input-range" id="slider-value" min="50" max="5000" step="50" value="500">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span>Current lead close rate (%)</span>
+                        <span id="val-close" class="text-[var(--cyan)] font-bold font-mono">20%</span>
+                    </div>
+                    <input type="range" class="roi-input-range" id="slider-close" min="1" max="100" value="20">
+                </div>
+            </div>
+            <div class="roi-result">
+                <h4>Monthly Revenue Recovered</h4>
+                <div class="roi-amount" id="roi-total">$0</div>
+                <p style="color: rgba(255,255,255,0.5); font-size: 14px; margin: 0;">Assuming 4 weeks per month</p>
+                <div class="chart-bar"><div class="chart-fill" id="roi-bar"></div></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════ PROCESS ═══ -->
+<section id="process" class="py-24 md:py-40 px-6 relative overflow-hidden" style="background:rgba(255,255,255,.01)">
+  <div class="max-w-7xl mx-auto space-y-24">
+
+    <div class="text-center reveal">
+      <p class="font-mono text-[11px] text-[var(--cyan)] uppercase tracking-[.3em] mb-3">// 03 — The System</p>
+      <h2 class="font-hero text-[clamp(3rem,7vw,7rem)] leading-none">
+        THREE PILLARS<br>OF <span class="gt">SYNC</span>
+      </h2>
+      <p class="text-white/40 mt-4 max-w-xl mx-auto">From zero to fully automated in under 7 days.</p>
+    </div>
+
+    <div class="relative">
+      <div class="hidden lg:block tl-line" id="tl-line"></div>
+      <div class="grid lg:grid-cols-3 gap-16 relative z-10">
+
+        <div class="text-center space-y-6 reveal" style="transition-delay:.1s">
+          <div class="relative w-24 h-24 mx-auto">
+            <div class="pulse-ring absolute inset-0 rounded-full opacity-20" style="background: var(--cyan)"></div>
+            <div class="relative w-24 h-24 rounded-full bg-[var(--cyan)] flex items-center justify-center shadow-[0_0_50px_rgba(0,255,231,.35)]">
+              <span class="font-hero text-black text-4xl">01</span>
+            </div>
+          </div>
+          <h4 class="text-2xl font-semibold">We Build the System</h4>
+          <p class="text-white/40 leading-relaxed px-4">We architect high-conversion landing pages and custom CRM workflows tailored to your exact niche.</p>
+        </div>
+
+        <div class="text-center space-y-6 reveal" style="transition-delay:.25s">
+          <div class="relative w-24 h-24 mx-auto">
+            <div class="pulse-ring absolute inset-0 rounded-full opacity-20" style="background: var(--purple)"></div>
+            <div class="relative w-24 h-24 rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(139,92,246,.35)]" style="background: var(--purple)">
+              <span class="font-hero text-white text-4xl">02</span>
+            </div>
+          </div>
+          <h4 class="text-2xl font-semibold">AI Handles Every Call</h4>
+          <p class="text-white/40 leading-relaxed px-4">Your custom voice agent answers every inbound call, qualifies leads, and handles bookings round the clock.</p>
+        </div>
+
+        <div class="text-center space-y-6 reveal" style="transition-delay:.4s">
+          <div class="relative w-24 h-24 mx-auto">
+            <div class="pulse-ring absolute inset-0 rounded-full opacity-20" style="background: var(--blue)"></div>
+            <div class="relative w-24 h-24 rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(0,119,255,.35)]" style="background: var(--blue)">
+              <span class="font-hero text-white text-4xl">03</span>
+            </div>
+          </div>
+          <h4 class="text-2xl font-semibold">You Close More Deals</h4>
+          <p class="text-white/40 leading-relaxed px-4">Wake up to a calendar packed with pre-qualified appointments ready to convert into high-paying clients.</p>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════ PRICING ═══ -->
+<section id="pricing" class="py-24 md:py-40 px-6 relative">
+  <div class="max-w-7xl mx-auto space-y-20">
+
+    <div class="text-center reveal">
+      <p class="font-mono text-[11px] text-[var(--cyan)] uppercase tracking-[.3em] mb-3">// 04 — Investment</p>
+      <h2 class="font-hero text-[clamp(3rem,7vw,7rem)] leading-none">BESPOKE <span class="gt">PRICING</span></h2>
+      <p class="text-white/40 mt-4">Transparent, scalable — built to grow with you.</p>
+    </div>
+
+    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 stagger reveal">
+
+      <div class="glass card-hover p-10 rounded-[2rem] flex flex-col">
+        <div class="mb-8">
+          <p class="font-mono text-[10px] text-white/30 uppercase tracking-widest mb-2">The Foundation</p>
+          <div class="big-num text-5xl">$1,499</div>
+          <div class="big-num text-xl opacity-50">—$2,500</div>
+          <p class="font-mono text-[10px] text-white/20 uppercase tracking-widest mt-1">One-Time Setup</p>
+        </div>
+        <ul class="space-y-4 text-sm text-white/50 flex-grow mb-8">
+          <li class="flex items-center gap-3"><iconify-icon icon="lucide:check-circle" class="text-[var(--cyan)] shrink-0"></iconify-icon> High-Fi Landing Page</li>
+          <li class="flex items-center gap-3"><iconify-icon icon="lucide:check-circle" class="text-[var(--cyan)] shrink-0"></iconify-icon> Mobile Responsive</li>
+          <li class="flex items-center gap-3"><iconify-icon icon="lucide:check-circle" class="text-[var(--cyan)] shrink-0"></iconify-icon> SEO Foundation</li>
+        </ul>
+        <a href="#" onclick="Calendly.initPopupWidget({url: 'https://calendly.com/fanbotservices/30min'});return false;" class="w-full py-4 text-center rounded-2xl btn-ghost font-bold text-sm">Book Demo</a>
+      </div>
+
+      <div class="glass card-hover price-hot p-10 rounded-[2rem] flex flex-col relative border-2">
+        <div class="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full btn-prime text-[10px] font-mono font-bold uppercase tracking-widest">
+          Most Popular
+        </div>
+        <div class="mb-8">
+          <p class="font-mono text-[10px] text-[var(--cyan)] uppercase tracking-widest mb-2">AI Specialist</p>
+          <div class="big-num text-5xl">$499</div>
+          <div class="big-num text-xl opacity-50">—$999</div>
+          <p class="font-mono text-[10px] text-white/20 uppercase tracking-widest mt-1">/ Per Month</p>
+        </div>
+        <ul class="space-y-4 text-sm text-white/70 flex-grow mb-8">
+          <li class="flex items-center gap-3"><iconify-icon icon="lucide:check-circle" class="text-[var(--cyan)] shrink-0"></iconify-icon> 24/7 AI Voice Agent</li>
+          <li class="flex items-center gap-3"><iconify-icon icon="lucide:check-circle" class="text-[var(--cyan)] shrink-0"></iconify-icon> GPT-4o Voice Engine</li>
+          <li class="flex items-center gap-3"><iconify-icon icon="lucide:check-circle" class="text-[var(--cyan)] shrink-0"></iconify-icon> Call Transcripts</li>
+          <li class="flex items-center gap-3"><iconify-icon icon="lucide:check-circle" class="text-[var(--cyan)] shrink-0"></iconify-icon> Unlimited Sync</li>
+        </ul>
+        <a href="#" onclick="Calendly.initPopupWidget({url: 'https://calendly.com/fanbotservices/30min'});return false;" class="w-full py-4 text-center rounded-2xl btn-prime font-bold text-sm">Book Demo</a>
+      </div>
+
+      <div class="glass card-hover p-10 rounded-[2rem] flex flex-col">
+        <div class="mb-8">
+          <p class="font-mono text-[10px] text-white/30 uppercase tracking-widest mb-2">Data Mastery</p>
+          <div class="big-num text-5xl">$799</div>
+          <div class="big-num text-xl opacity-50">—$1,200</div>
+          <p class="font-mono text-[10px] text-white/20 uppercase tracking-widest mt-1">/ Per Month</p>
+        </div>
+        <ul class="space-y-4 text-sm text-white/50 flex-grow mb-8">
+          <li class="flex items-center gap-3"><iconify-icon icon="lucide:check-circle" class="text-purple-400 shrink-0"></iconify-icon> Full CRM Setup</li>
+          <li class="flex items-center gap-3"><iconify-icon icon="lucide:check-circle" class="text-purple-400 shrink-0"></iconify-icon> Sales Pipeline Architecture</li>
+          <li class="flex items-center gap-3"><iconify-icon icon="lucide:check-circle" class="text-purple-400 shrink-0"></iconify-icon> Performance Audits</li>
+        </ul>
+        <a href="#" onclick="Calendly.initPopupWidget({url: 'https://calendly.com/fanbotservices/30min'});return false;" class="w-full py-4 text-center rounded-2xl btn-ghost font-bold text-sm">Book Demo</a>
+      </div>
+
+      <div class="glass card-hover p-10 rounded-[2rem] flex flex-col">
+        <div class="mb-8">
+          <p class="font-mono text-[10px] text-white/30 uppercase tracking-widest mb-2">Automation Pro</p>
+          <div class="big-num text-5xl">$999</div>
+          <div class="big-num text-xl opacity-50">—$1,500</div>
+          <p class="font-mono text-[10px] text-white/20 uppercase tracking-widest mt-1">One-Time + Usage</p>
+        </div>
+        <ul class="space-y-4 text-sm text-white/50 flex-grow mb-8">
+          <li class="flex items-center gap-3"><iconify-icon icon="lucide:check-circle" class="text-emerald-400 shrink-0"></iconify-icon> Custom Workflows</li>
+          <li class="flex items-center gap-3"><iconify-icon icon="lucide:check-circle" class="text-emerald-400 shrink-0"></iconify-icon> Reputation Shield</li>
+          <li class="flex items-center gap-3"><iconify-icon icon="lucide:check-circle" class="text-emerald-400 shrink-0"></iconify-icon> SMS/Email Cascades</li>
+        </ul>
+        <a href="#" onclick="Calendly.initPopupWidget({url: 'https://calendly.com/fanbotservices/30min'});return false;" class="w-full py-4 text-center rounded-2xl btn-ghost font-bold text-sm">Book Demo</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════ TESTIMONIALS ═══ -->
+<section class="py-24 md:py-40 relative overflow-hidden" style="max-width: 100%; background:rgba(255,255,255,.01)">
+    <div class="text-center reveal mb-16">
+        <p class="font-mono text-[11px] text-[var(--cyan)] uppercase tracking-[.3em] mb-3">// 05 — Impact</p>
+        <h2 class="font-hero text-[clamp(3rem,7vw,7rem)] leading-none">Real Businesses.<br><span class="gt">Real Results.</span></h2>
+    </div>
+    
+    <div class="reveal" style="overflow: hidden; mask-image: linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%); -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%); padding: 20px 0;">
+        <div class="marquee-row-left" style="display: flex; gap: 32px; width: max-content; animation: scroll-test 50s linear infinite;">
+            <!-- SET 1 -->
+            <div class="testimonial-card">
+                <div class="stars">★★★★★</div>
+                <div class="testimonial-text">"We used to miss 40% of calls during the lunch rush. Since Neltrix took over, our reservations are up 28% and the staff is completely stress-free."</div>
+                <div class="testimonial-author"><div class="avatar-circle">SJ</div><div><div class="author-name">Sarah Jenkins</div><div class="author-company">Owner, Bella Vita Dining</div></div></div>
+            </div>
+            <div class="testimonial-card">
+                <div class="stars">★★★★★</div>
+                <div class="testimonial-text">"The AI books patients directly into our scheduling software. It handles insurance questions better than my last hire. Absolute game changer."</div>
+                <div class="testimonial-author"><div class="avatar-circle">MR</div><div><div class="author-name">Dr. Mark Roberts</div><div class="author-company">Apex Dental Clinic</div></div></div>
+            </div>
+            <div class="testimonial-card">
+                <div class="stars">★★★★★</div>
+                <div class="testimonial-text">"As a solo agent, I can't answer the phone while showing houses. This AI system captured 3 listings last month that I would have otherwise missed."</div>
+                <div class="testimonial-author"><div class="avatar-circle">AT</div><div><div class="author-name">Amanda Torres</div><div class="author-company">Premium Real Estate</div></div></div>
+            </div>
+            <div class="testimonial-card">
+                <div class="stars">★★★★★</div>
+                <div class="testimonial-text">"Integrating this into our Shopify store took under an hour. It now handles 90% of order status inquiries automatically."</div>
+                <div class="testimonial-author"><div class="avatar-circle">JC</div><div><div class="author-name">James Chen</div><div class="author-company">E-commerce Director</div></div></div>
+            </div>
+            <div class="testimonial-card">
+                <div class="stars">★★★★★</div>
+                <div class="testimonial-text">"Our legal firm requires strict confidentiality and precise intake. The AI screens potential clients perfectly before passing them to our paralegals."</div>
+                <div class="testimonial-author"><div class="avatar-circle">RD</div><div><div class="author-name">Rachel Dawes</div><div class="author-company">Managing Partner</div></div></div>
+            </div>
+            <div class="testimonial-card">
+                <div class="stars">★★★★★</div>
+                <div class="testimonial-text">"We were burning money on a 24/7 answering service that just took messages. Now, calls get answered instantly and appointments get booked."</div>
+                <div class="testimonial-author"><div class="avatar-circle">MJ</div><div><div class="author-name">Marcus Johnson</div><div class="author-company">Plumbing Contractor</div></div></div>
+            </div>
+            <!-- SET 2 -->
+            <div class="testimonial-card">
+                <div class="stars">★★★★★</div>
+                <div class="testimonial-text">"We used to miss 40% of calls during the lunch rush. Since Neltrix took over, our reservations are up 28% and the staff is completely stress-free."</div>
+                <div class="testimonial-author"><div class="avatar-circle">SJ</div><div><div class="author-name">Sarah Jenkins</div><div class="author-company">Owner, Bella Vita Dining</div></div></div>
+            </div>
+            <div class="testimonial-card">
+                <div class="stars">★★★★★</div>
+                <div class="testimonial-text">"The AI books patients directly into our scheduling software. It handles insurance questions better than my last hire. Absolute game changer."</div>
+                <div class="testimonial-author"><div class="avatar-circle">MR</div><div><div class="author-name">Dr. Mark Roberts</div><div class="author-company">Apex Dental Clinic</div></div></div>
+            </div>
+            <div class="testimonial-card">
+                <div class="stars">★★★★★</div>
+                <div class="testimonial-text">"As a solo agent, I can't answer the phone while showing houses. This AI system captured 3 listings last month that I would have otherwise missed."</div>
+                <div class="testimonial-author"><div class="avatar-circle">AT</div><div><div class="author-name">Amanda Torres</div><div class="author-company">Premium Real Estate</div></div></div>
+            </div>
+            <div class="testimonial-card">
+                <div class="stars">★★★★★</div>
+                <div class="testimonial-text">"Integrating this into our Shopify store took under an hour. It now handles 90% of order status inquiries automatically."</div>
+                <div class="testimonial-author"><div class="avatar-circle">JC</div><div><div class="author-name">James Chen</div><div class="author-company">E-commerce Director</div></div></div>
+            </div>
+            <div class="testimonial-card">
+                <div class="stars">★★★★★</div>
+                <div class="testimonial-text">"Our legal firm requires strict confidentiality and precise intake. The AI screens potential clients perfectly before passing them to our paralegals."</div>
+                <div class="testimonial-author"><div class="avatar-circle">RD</div><div><div class="author-name">Rachel Dawes</div><div class="author-company">Managing Partner</div></div></div>
+            </div>
+            <div class="testimonial-card">
+                <div class="stars">★★★★★</div>
+                <div class="testimonial-text">"We were burning money on a 24/7 answering service that just took messages. Now, calls get answered instantly and appointments get booked."</div>
+                <div class="testimonial-author"><div class="avatar-circle">MJ</div><div><div class="author-name">Marcus Johnson</div><div class="author-company">Plumbing Contractor</div></div></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════ FAQ ═══ -->
+<section id="faq" class="py-24 md:py-40 px-6 relative overflow-hidden">
+  <div class="max-w-4xl mx-auto space-y-16">
+    <div class="text-center reveal">
+      <p class="font-mono text-[11px] text-[var(--cyan)] uppercase tracking-[.3em] mb-3">// 06 — Clarity</p>
+      <h2 class="font-hero text-[clamp(3rem,7vw,7rem)] leading-none">COMMON <span class="gt">QUESTIONS</span></h2>
+      <p class="text-white/40 mt-4 max-w-xl mx-auto">Everything you need to know about our systems and process.</p>
+    </div>
+
+    <div class="space-y-4 reveal stagger">
+      
+      <!-- FAQ 1 -->
+      <details class="glass rounded-[1.5rem] group cursor-pointer transition-all duration-300 hover:border-white/20" name="faq">
+        <summary class="p-6 md:p-8 font-semibold text-lg flex justify-between items-center list-none [&::-webkit-details-marker]:hidden">
+          What exactly is included in a website build — just a landing page or a full site?
+          <span class="text-[var(--cyan)] transition-transform duration-300 group-open:rotate-180">
+            <iconify-icon icon="lucide:chevron-down"></iconify-icon>
+          </span>
+        </summary>
+        <div class="px-6 pb-6 md:px-8 md:pb-8 text-white/50 leading-relaxed text-sm border-t border-white/5 pt-4 mt-2">
+          It depends on what your business needs. We build everything from single landing pages (great for restaurants, salons, or service businesses wanting a professional online presence) all the way to full multi-page websites with custom functionality. Every build includes mobile-responsive design, Google Maps integration, contact/booking forms, WhatsApp link, and deployment on a live domain. We'll scope exactly what you need on our first call.
+        </div>
+      </details>
+
+      <!-- FAQ 2 -->
+      <details class="glass rounded-[1.5rem] group cursor-pointer transition-all duration-300 hover:border-white/20" name="faq">
+        <summary class="p-6 md:p-8 font-semibold text-lg flex justify-between items-center list-none [&::-webkit-details-marker]:hidden">
+          How long does it take to build and go live?
+          <span class="text-[var(--cyan)] transition-transform duration-300 group-open:rotate-180">
+            <iconify-icon icon="lucide:chevron-down"></iconify-icon>
+          </span>
+        </summary>
+        <div class="px-6 pb-6 md:px-8 md:pb-8 text-white/50 leading-relaxed text-sm border-t border-white/5 pt-4 mt-2">
+          A standard landing page is live in 3–5 business days. A full multi-page website typically takes 7–14 days depending on the complexity and how quickly you provide content (logo, text, images). We move fast — and once we have everything from your side, we don't sit on it.
+        </div>
+      </details>
+
+      <!-- FAQ 3 -->
+      <details class="glass rounded-[1.5rem] group cursor-pointer transition-all duration-300 hover:border-white/20" name="faq">
+        <summary class="p-6 md:p-8 font-semibold text-lg flex justify-between items-center list-none [&::-webkit-details-marker]:hidden">
+          Does this AI receptionist really sound like a human?
+          <span class="text-[var(--cyan)] transition-transform duration-300 group-open:rotate-180">
+            <iconify-icon icon="lucide:chevron-down"></iconify-icon>
+          </span>
+        </summary>
+        <div class="px-6 pb-6 md:px-8 md:pb-8 text-white/50 leading-relaxed text-sm border-t border-white/5 pt-4 mt-2">
+          Yes. We use state-of-the-art ultra-low latency voice models. It handles interruptions, says "um" and "ah" naturally, and speaks with emotional intelligence. Most callers never realize they are speaking to an AI.
+        </div>
+      </details>
+
+      <!-- FAQ 4 -->
+      <details class="glass rounded-[1.5rem] group cursor-pointer transition-all duration-300 hover:border-white/20" name="faq">
+        <summary class="p-6 md:p-8 font-semibold text-lg flex justify-between items-center list-none [&::-webkit-details-marker]:hidden">
+          What other AI services do you offer beyond voice agents?
+          <span class="text-[var(--cyan)] transition-transform duration-300 group-open:rotate-180">
+            <iconify-icon icon="lucide:chevron-down"></iconify-icon>
+          </span>
+        </summary>
+        <div class="px-6 pb-6 md:px-8 md:pb-8 text-white/50 leading-relaxed text-sm border-t border-white/5 pt-4 mt-2">
+          A lot more than voice. We build WhatsApp AI chatbots that handle customer queries and bookings, AI automation workflows using Zapier and n8n that connect your tools and eliminate repetitive manual tasks, lead scraping and qualification systems, Google Sheets data pipelines, and custom AI-powered tools tailored to your business. If it involves automating a process or handling communication without a human — we can build it.
+        </div>
+      </details>
+
+      <!-- FAQ 5 -->
+      <details class="glass rounded-[1.5rem] group cursor-pointer transition-all duration-300 hover:border-white/20" name="faq">
+        <summary class="p-6 md:p-8 font-semibold text-lg flex justify-between items-center list-none [&::-webkit-details-marker]:hidden">
+          I already use a CRM — can you integrate with it instead?
+          <span class="text-[var(--cyan)] transition-transform duration-300 group-open:rotate-180">
+            <iconify-icon icon="lucide:chevron-down"></iconify-icon>
+          </span>
+        </summary>
+        <div class="px-6 pb-6 md:px-8 md:pb-8 text-white/50 leading-relaxed text-sm border-t border-white/5 pt-4 mt-2">
+          Yes. We can connect to most popular CRMs via Zapier, n8n, or direct API integrations. Whether you're on HubSpot, Zoho, Salesforce, or a custom system — we'll plug our AI and automation layer on top of what you already have rather than force you to switch platforms.
+        </div>
+      </details>
+
+      <!-- FAQ 6 -->
+      <details class="glass rounded-[1.5rem] group cursor-pointer transition-all duration-300 hover:border-white/20" name="faq">
+        <summary class="p-6 md:p-8 font-semibold text-lg flex justify-between items-center list-none [&::-webkit-details-marker]:hidden">
+          How does pricing work — is it one-time or a monthly fee?
+          <span class="text-[var(--cyan)] transition-transform duration-300 group-open:rotate-180">
+            <iconify-icon icon="lucide:chevron-down"></iconify-icon>
+          </span>
+        </summary>
+        <div class="px-6 pb-6 md:px-8 md:pb-8 text-white/50 leading-relaxed text-sm border-t border-white/5 pt-4 mt-2">
+          Both, depending on the service. Website builds are one-time payments (starting at $1,499). AI voice agents and CRM management are monthly retainers ($499–$799/mo) because they require ongoing hosting, maintenance, and optimization. Automation workflows are priced per project (starting at $999 each). We're always transparent — no surprise fees, no locked contracts. You'll see the full breakdown before anything starts.
+        </div>
+      </details>
+
+      <!-- FAQ 7 -->
+      <details class="glass rounded-[1.5rem] group cursor-pointer transition-all duration-300 hover:border-white/20" name="faq">
+        <summary class="p-6 md:p-8 font-semibold text-lg flex justify-between items-center list-none [&::-webkit-details-marker]:hidden">
+          Is there a contract? What if I want to cancel?
+          <span class="text-[var(--cyan)] transition-transform duration-300 group-open:rotate-180">
+            <iconify-icon icon="lucide:chevron-down"></iconify-icon>
+          </span>
+        </summary>
+        <div class="px-6 pb-6 md:px-8 md:pb-8 text-white/50 leading-relaxed text-sm border-t border-white/5 pt-4 mt-2">
+          No long-term contracts. Monthly services run month-to-month — cancel anytime with 7 days notice. We also offer a 30-day results guarantee: if we set up your system and you don't see measurable improvement in the first month, we'll work for free until you do. We're not interested in keeping clients who aren't getting value.
+        </div>
+      </details>
+
+      <!-- FAQ 8 -->
+      <details class="glass rounded-[1.5rem] group cursor-pointer transition-all duration-300 hover:border-white/20" name="faq">
+        <summary class="p-6 md:p-8 font-semibold text-lg flex justify-between items-center list-none [&::-webkit-details-marker]:hidden">
+          I'm not technical at all. Will I understand what's being built?
+          <span class="text-[var(--cyan)] transition-transform duration-300 group-open:rotate-180">
+            <iconify-icon icon="lucide:chevron-down"></iconify-icon>
+          </span>
+        </summary>
+        <div class="px-6 pb-6 md:px-8 md:pb-8 text-white/50 leading-relaxed text-sm border-t border-white/5 pt-4 mt-2">
+          That's exactly why we exist. You don't need to understand the tech — you just need to understand the result. We explain everything in plain language, show you what's live before you pay, and handle all the technical side completely. Our clients are restaurant owners, salon owners, and real estate agents — not developers. If you can use WhatsApp, you can use what we build for you.
+        </div>
+      </details>
+
+      <!-- FAQ 9 -->
+      <details class="glass rounded-[1.5rem] group cursor-pointer transition-all duration-300 hover:border-white/20" name="faq">
+        <summary class="p-6 md:p-8 font-semibold text-lg flex justify-between items-center list-none [&::-webkit-details-marker]:hidden">
+          Can you handle multiple services at once — website AND AI AND CRM?
+          <span class="text-[var(--cyan)] transition-transform duration-300 group-open:rotate-180">
+            <iconify-icon icon="lucide:chevron-down"></iconify-icon>
+          </span>
+        </summary>
+        <div class="px-6 pb-6 md:px-8 md:pb-8 text-white/50 leading-relaxed text-sm border-t border-white/5 pt-4 mt-2">
+          Yes — this is actually our all-in-one model. Most agencies only do one thing. We have a full-stack developer (custom websites and integrations) and an AI specialist (voice agents, automations, CRM) working together. You get a single point of contact for your entire digital system. Many clients start with a website, then add AI automation, then CRM — and it all connects seamlessly because one team built everything.
+        </div>
+      </details>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════ FINAL CTA ═══ -->
+<section class="py-24 md:py-40 px-6">
+  <div class="max-w-6xl mx-auto">
+    <div class="relative rounded-[3rem] p-8 md:p-32 text-center overflow-hidden">
+
+      <!-- BG layers -->
+      <div class="absolute inset-0 rounded-[3rem]" style="background: linear-gradient(135deg, rgba(0,119,255,.1) 0%, rgba(0,255,231,.08) 50%, rgba(139,92,246,.1) 100%); border: 1px solid rgba(0,255,231,.12)"></div>
+      <div class="absolute -top-40 -left-40 w-96 h-96 rounded-full blur-[120px]" style="background: rgba(0,255,231,.12)"></div>
+      <div class="absolute -bottom-40 -right-40 w-96 h-96 rounded-full blur-[120px]" style="background: rgba(139,92,246,.12)"></div>
+      <!-- Grid overlay -->
+      <div class="absolute inset-0 opacity-5" style="background-image: linear-gradient(rgba(0,255,231,.3) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,231,.3) 1px, transparent 1px); background-size: 40px 40px;"></div>
+
+      <div class="relative z-10 space-y-8 reveal">
+        <p class="font-mono text-[11px] text-[var(--cyan)] uppercase tracking-[.3em]">// Ready to scale?</p>
+        <h2 class="font-hero text-[clamp(2.5rem,10vw,10rem)] leading-[.88]">
+          STOP LOSING<br>
+          LEADS. START<br>
+          <span class="gt-hot">CLOSING THEM.</span>
+        </h2>
+        <p class="text-xl text-white/50 max-w-2xl mx-auto">Join the elite 1% of businesses using neural automation to dominate their market. Zero risk, maximum velocity.</p>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-6 pt-6">
+          <a href="#" onclick="Calendly.initPopupWidget({url: 'https://calendly.com/fanbotservices/30min'});return false;" class="px-14 py-7 rounded-2xl bg-white text-black text-xl font-black transition-all hover:scale-105 hover:shadow-[0_0_60px_rgba(255,255,255,.3)]">
+            Book Demo
+          </a>
+        </div>
+        <p class="font-mono text-[11px] text-white/20 uppercase tracking-widest">No contracts · Cancel anytime · Go live in 7 days</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════ FOOTER ═══ -->
+<footer class="py-10 md:py-16 px-6 border-t relative overflow-hidden" style="background: #010206; border-color: rgba(255,255,255,.03)">
+  
+  <!-- Subtle ambient glow in footer -->
+  <div class="absolute -bottom-[20rem] -left-[10rem] w-[40rem] h-[40rem] rounded-full blur-[150px] opacity-20 pointer-events-none" style="background: var(--cyan)"></div>
+  <div class="absolute -bottom-[20rem] -right-[10rem] w-[40rem] h-[40rem] rounded-full blur-[150px] opacity-20 pointer-events-none" style="background: var(--purple)"></div>
+
+  <div class="max-w-7xl mx-auto relative z-10">
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-8 items-start mb-12">
+      
+      <!-- Logo & Bio -->
+      <div class="md:col-span-4 space-y-6 pr-0 md:pr-8">
+        <a href="#" class="inline-block group">
+          <img src="Static/Neltrix.png" alt="Neltrix Logo" class="h-16 md:h-20 w-auto object-contain transition-opacity duration-300 opacity-90 group-hover:opacity-100">
+        </a>
+        <p class="text-white/40 text-sm md:text-base leading-relaxed max-w-sm font-light">
+          The premier neural automation agency. We build bespoke AI systems to scale service-based businesses globally.
+        </p>
+      </div>
+
+      <!-- Navigation -->
+      <div class="md:col-start-7 md:col-span-3 space-y-6 mt-[10px]">
+        <h5 class="font-mono text-[10px] text-white/40 uppercase tracking-[.25em]">Navigation</h5>
+        <ul class="space-y-4 text-sm text-white/60 font-light">
+          <li><a href="#services" class="hover:text-white transition-colors duration-300">Services_Matrix</a></li>
+          <li><a href="#niches"   class="hover:text-white transition-colors duration-300">Industry_Nodes</a></li>
+          <li><a href="#process"  class="hover:text-white transition-colors duration-300">Sync_Process</a></li>
+          <li><a href="#pricing"  class="hover:text-white transition-colors duration-300">License_Access</a></li>
+        </ul>
+      </div>
+
+      <!-- Contact -->
+      <div class="md:col-span-3 space-y-6 mt-[10px]">
+        <h5 class="font-mono text-[10px] text-white/40 uppercase tracking-[.25em]">Contact Us</h5>
+        <ul class="space-y-4 text-sm text-white/60 font-light">
+          <li>
+            <a href="mailto:ai.maxium@gmail.com" class="hover:text-white transition-colors duration-300">
+              ai.maxium@gmail.com
+            </a>
+          </li>
+          <li class="pt-2">
+            <a href="#" onclick="Calendly.initPopupWidget({url: 'https://calendly.com/fanbotservices/30min'});return false;" class="inline-block px-5 py-2.5 rounded-lg border border-white/10 hover:border-white/40 hover:bg-white/5 transition-all duration-300 text-white text-xs tracking-wide">
+              Book Demo
+            </a>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+
+    <!-- Bottom Bar -->
+    <div class="pt-8 flex flex-col md:flex-row items-center justify-between border-t border-white/5">
+      <p class="font-mono text-[10px] text-white/30 uppercase tracking-[.2em] mb-4 md:mb-0">
+        © 2026 NELTRIX_SYSTEMS. ALL_PROTOCOLS_RESERVED.
+      </p>
+      <div class="flex items-center gap-8 font-mono text-[10px] text-white/30 uppercase tracking-[.2em]">
+        <a href="#" class="hover:text-white transition-colors">Privacy Policy</a>
+        <a href="#" class="hover:text-white transition-colors">Terms of Service</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════ SCRIPTS ═══ -->
+<script>
+/* ─── CURSOR ─── */
+const dot  = document.getElementById('cursor-dot');
+const ring = document.getElementById('cursor-ring');
+let mx = 0, my = 0, rx = 0, ry = 0;
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+;(function loop() {
+  rx += (mx - rx) * .12;
+  ry += (my - ry) * .12;
+  dot.style.left  = mx + 'px';
+  dot.style.top   = my + 'px';
+  ring.style.left = rx + 'px';
+  ring.style.top  = ry + 'px';
+  requestAnimationFrame(loop);
+})();
+
+/* ─── CANVAS PARTICLES + LINES ─── */
+const canvas = document.getElementById('bg-canvas');
+const ctx    = canvas.getContext('2d');
+let W, H;
+function resize() { W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
+resize(); window.addEventListener('resize', resize);
+
+const DOTS = Array.from({length: 80}, () => ({
+  x: Math.random() * innerWidth,
+  y: Math.random() * innerHeight,
+  vx: (Math.random() - .5) * .3,
+  vy: (Math.random() - .5) * .3,
+  r: Math.random() * 1.5 + .5,
+}));
+
+function drawParticles() {
+  ctx.clearRect(0, 0, W, H);
+  DOTS.forEach(d => {
+    d.x += d.vx; d.y += d.vy;
+    if (d.x < 0) d.x = W; if (d.x > W) d.x = 0;
+    if (d.y < 0) d.y = H; if (d.y > H) d.y = 0;
+    ctx.beginPath();
+    ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,255,231,.35)';
+    ctx.fill();
+  });
+  for (let i = 0; i < DOTS.length; i++) {
+    for (let j = i + 1; j < DOTS.length; j++) {
+      const dx = DOTS[i].x - DOTS[j].x;
+      const dy = DOTS[i].y - DOTS[j].y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < 140) {
+        ctx.beginPath();
+        ctx.moveTo(DOTS[i].x, DOTS[i].y);
+        ctx.lineTo(DOTS[j].x, DOTS[j].y);
+        ctx.strokeStyle = `rgba(0,255,231,${.07 * (1 - dist/140)})`;
+        ctx.lineWidth = .5;
+        ctx.stroke();
+      }
+    }
+  }
+  requestAnimationFrame(drawParticles);
+}
+drawParticles();
+
+/* ─── REVEAL ON SCROLL ─── */
+const revObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('on');
+      // trigger timeline
+      if (e.target.closest('#process')) {
+        const tl = document.getElementById('tl-line');
+        if (tl) tl.classList.add('on');
+      }
+    }
+  });
+}, { threshold: .12, rootMargin: '0px 0px -40px 0px' });
+
+document.querySelectorAll('.reveal, .reveal-l').forEach(el => revObs.observe(el));
+
+/* ─── COUNTER ANIMATION ─── */
+function animateCount(el) {
+  const target   = parseInt(el.dataset.count);
+  const suffix   = el.dataset.suffix || '';
+  const prefix   = el.dataset.prefix || '';
+  const duration = 2000;
+  const start    = performance.now();
+  function step(now) {
+    const t  = Math.min((now - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - t, 3);
+    el.textContent = prefix + Math.round(ease * target) + suffix;
+    if (t < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+const countObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      animateCount(e.target);
+      countObs.unobserve(e.target);
+    }
+  });
+}, { threshold: .5 });
+document.querySelectorAll('[data-count]').forEach(el => countObs.observe(el));
+
+/* ─── REVENUE COUNTER ─── */
+const revEl = document.getElementById('rev-counter');
+let revVal = 0;
+const revTarget = 84230;
+const revStart = performance.now();
+function animRev(now) {
+  const t = Math.min((now - revStart) / 2500, 1);
+  const ease = 1 - Math.pow(1 - t, 3);
+  revVal = ease * revTarget;
+  revEl.textContent = '$' + revVal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  if (t < 1) requestAnimationFrame(animRev);
+  else {
+    // keep ticking slowly
+    setInterval(() => {
+      revVal += Math.random() * 40 + 5;
+      revEl.textContent = '$' + revVal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }, 2800);
+  }
+}
+requestAnimationFrame(animRev);
+
+/* ─── TILT ON SERVICE CARDS ─── */
+document.querySelectorAll('.card-hover').forEach(card => {
+  card.addEventListener('mousemove', e => {
+    const r  = card.getBoundingClientRect();
+    const x  = (e.clientX - r.left) / r.width  - .5;
+    const y  = (e.clientY - r.top)  / r.height - .5;
+    card.style.transform = `perspective(800px) rotateX(${-y * 6}deg) rotateY(${x * 6}deg) translateY(-10px) scale(1.01)`;
+  });
+  card.addEventListener('mouseleave', () => {
+    card.style.transform = '';
+  });
+});
+
+/* ─── ROI CALCULATOR ─── */
+const sliders = {
+    calls: document.getElementById('slider-calls'),
+    value: document.getElementById('slider-value'),
+    close: document.getElementById('slider-close')
+};
+const labels = {
+    calls: document.getElementById('val-calls'),
+    value: document.getElementById('val-value'),
+    close: document.getElementById('val-close')
+};
+const roiTotal = document.getElementById('roi-total');
+const roiBar = document.getElementById('roi-bar');
+
+function calculateROI() {
+    if(!sliders.calls) return;
+    const calls = parseInt(sliders.calls.value);
+    const value = parseInt(sliders.value.value);
+    const closeRate = parseInt(sliders.close.value) / 100;
+    
+    labels.calls.innerText = calls;
+    labels.value.innerText = '$' + value;
+    labels.close.innerText = sliders.close.value + '%';
+
+    const lostRevenue = calls * 4 * closeRate * value;
+    const recovered = lostRevenue * 0.70;
+
+    roiTotal.innerText = '$' + recovered.toLocaleString(undefined, {maximumFractionDigits: 0});
+    
+    const percentage = Math.min((recovered / 50000) * 100, 100);
+    roiBar.style.width = percentage + '%';
+
+    Object.values(sliders).forEach(slider => {
+        const percent = ((slider.value - slider.min) / (slider.max - slider.min)) * 100;
+        slider.style.background = `linear-gradient(to right, var(--cyan) ${percent}%, rgba(255,255,255,0.1) ${percent}%)`;
+    });
+}
+
+if(sliders.calls) {
+    Object.values(sliders).forEach(slider => {
+        slider.addEventListener('input', calculateROI);
+        slider.addEventListener('mousedown', () => roiTotal.classList.add('active-calc'));
+        slider.addEventListener('mouseup', () => roiTotal.classList.remove('active-calc'));
+        slider.addEventListener('mouseleave', () => roiTotal.classList.remove('active-calc'));
+        slider.addEventListener('touchstart', () => roiTotal.classList.add('active-calc'), {passive: true});
+        slider.addEventListener('touchend', () => roiTotal.classList.remove('active-calc'));
+    });
+    calculateROI();
+}
+</script>
+</body>
+</html>
